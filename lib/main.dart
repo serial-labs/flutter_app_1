@@ -29,6 +29,23 @@ class MyApp extends StatelessWidget {
 class MyAppState extends ChangeNotifier {
   var current = WordPair.random();
 
+  double x = 0.0;
+  double y = 0.0;
+  double xStart = 0.0;
+  double yStart = 0.0;
+//  Color c = Color.fromARGB(200, random.nextInt(55) + 200, 240, 190);
+
+  void _touchDown(PointerEvent details, AniParts ap) {
+    // _updateLocation(details);
+    xStart = details.position.dx;
+    yStart = details.position.dy;
+  }
+
+  void _touchUp(PointerEvent details, AniParts ap) {
+    if (details.position.dx - xStart > 40) changeBodyPart(ap, 1);
+    notifyListeners();
+  }
+
   void getNext() {
     current = WordPair.random();
     notifyListeners();
@@ -253,6 +270,27 @@ class AnimalCompo extends StatelessWidget {
             for (int i = 0; i < 4; i++)
               Image.asset(
                   'assets/LION_V_400crop400/${AnimalParts[i][AniPartIdx[i]]}.png'),
+            Column(
+              children: [
+                for (int i = 0; i < 4; i++)
+                  Flexible(
+                    fit: FlexFit.tight,
+                    flex: 1,
+                    child: Listener(
+                      onPointerDown: (PointerDownEvent pde) {
+                        appState._touchDown(pde, AniParts.values[i]);
+                      },
+                      onPointerUp: (PointerUpEvent pue) {
+                        appState._touchUp(pue, AniParts.values[i]);
+                      },
+                      child: Container(
+                          height: 50,
+                          width: 350,
+                          color: Color.fromARGB(55, 120 + i * 40, 150, i * 80)),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
         Column(mainAxisSize: MainAxisSize.min, children: [
