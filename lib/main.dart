@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-const swipeThreshold = 140;
+const swipeThreshold = 110;
 
 class MyAppState extends ChangeNotifier {
 // ${AnimalParts[i][AniPartIdx[i]]}.png
@@ -43,7 +43,7 @@ class MyAppState extends ChangeNotifier {
   double yStart = 0.0;
   int swipeDir = 0;
   int newIdx = -1;
-  String newFileName = '';
+  String newFileName = 'assets/LION_V_400crop400/pixelT.png';
 
 //  Color c = Color.fromARGB(200, random.nextInt(55) + 200, 240, 190);
 
@@ -54,55 +54,15 @@ class MyAppState extends ChangeNotifier {
 // pendant le swipe, on utilise une image extra B qui représente la partie "suivante" ou "précedente"
 
   void _touchDown(PointerEvent details, AniParts ap) {
-    // _updateLocation(details);
+    //un swipe va potentiellement commencer
+    print("-- Starting SWIPE -- $ap");
+    swipeDir = 0;
+    //on stocke la position actuelle du pointeur
     xStart = details.position.dx;
     yStart = details.position.dy;
+    // on raccourcit les durées d'animation (pendant le swipe, l'opacité suit le doigt)
     _duration = 50;
     _extraDuration = 100;
-  }
-
-  void _touchUp(PointerEvent details, AniParts ap) {
-    if (swipeDir == 0) return; // rien ne s'est passé depuis le touchDown
-
-    var offset = details.position.dx - xStart;
-    //deux cas à envisager : 1 swipe cancel et 2 swipe valide
-    if (offset.abs() > swipeThreshold) {
-      //2. swipe valide => A récupère la nouvelle image, B l'ancienne,
-      // A&B inversent leurs opacités et A va vers 1, B vers 0
-      //changeBodyPart(ap, 1);
-      print(
-          'old : AniPartIdx[ap.index] ${AniPartIdx[ap.index]} - newIdx:$newIdx');
-      var api = AniPartIdx[ap.index];
-      AniPartIdx[ap.index] = newIdx;
-      newIdx = api;
-      print(
-          'new : AniPartIdx[ap.index] ${AniPartIdx[ap.index]} - newIdx:$newIdx');
-
-      print(
-          'old : _partOpacity[ap.index] ${_partOpacity[ap.index]} - _newpartOpacity:$_newpartOpacity');
-      var apiO = _partOpacity[ap.index];
-      _partOpacity[ap.index] = _newpartOpacity;
-      _newpartOpacity = apiO;
-      print(
-          'new : _partOpacity[ap.index] ${_partOpacity[ap.index]} - _newpartOpacity:$_newpartOpacity');
-      // Future.delayed(Duration(seconds: 1), () {
-      //   _partOpacity[ap.index] = 1;
-      //   _newpartOpacity = 0;
-      //   print(
-      //       'new : ap.index ${ap.index} - AniPartIdx[ap.index]:${AniPartIdx[ap.index]} - ${AnimalPartsFN[ap.index][AniPartIdx[ap.index]]}');
-
-      //   print("Executed after 2 seconds");
-      //});
-      //(AniPartIdx[ap.index] + swipeDir) % AnimalPartsFN[ap.index].length;
-    } else {
-      //1. Cancel, on revient ver
-      _partOpacity[ap.index] = 1;
-      _newpartOpacity = 0;
-      _duration = 600;
-      _extraDuration = 300;
-    }
-    swipeDir = 0;
-    notifyListeners();
   }
 
   void _touchMove(PointerMoveEvent details, AniParts ap) {
@@ -110,7 +70,7 @@ class MyAppState extends ChangeNotifier {
     _duration = 0;
     _extraDuration = 100;
     //print('newFileName: $newFileName');
-    // on vérifie si le swipe en cours change de direction, auquel cas, changer l'image utilisée par B
+    // on vérifie si le swipe en cours change de direction, auquel cas, changer l'image utilisée par l'image extra B
     if (swipeDir == 0 ||
         (offset > 0 && swipeDir <= 0) ||
         (offset < 0 && swipeDir >= 0)) {
@@ -125,14 +85,57 @@ class MyAppState extends ChangeNotifier {
           'assets/LION_V_400crop400/${AnimalPartsFN[ap.index][newIdx]}.png';
       print('$swipeDir : $newFileName');
     }
-    //print(_partOpacity);
+
+    //ajustement des opacités en fonction de la distance parcourue par le doigt
     var i = ap.index;
-    //  print(details.position.dx - xStart);
     _newpartOpacity = (details.position.dx - xStart).abs() / swipeThreshold;
     if (_newpartOpacity > 1) _newpartOpacity = 1;
     _partOpacity[i] = 1 - _newpartOpacity;
+
     //if (_partOpacity[i] < 0) _partOpacity[i] = 0;
     print('touchDown => newFileName: $newFileName');
+    notifyListeners();
+  }
+
+  void _touchUp(PointerEvent details, AniParts ap) {
+    //FIN DU SWIPE
+    if (swipeDir == 0) return; // rien ne s'est passé depuis le touchDown
+
+    var offset = details.position.dx - xStart;
+    //deux cas à envisager : 1 swipe validé ou 2 swipe annulé
+    if (offset.abs() > swipeThreshold) {
+      //1. swipe valide => A récupère la nouvelle image, B l'ancienne,
+      // A&B inversent leurs opacités et A va vers 1, B vers 0
+      //changeBodyPart(ap, 1);
+      //print('old : AniPartIdx[ap.index] ${AniPartIdx[ap.index]} - newIdx:$newIdx');
+      var api = AniPartIdx[ap.index];
+      AniPartIdx[ap.index] = newIdx;
+      newIdx = api;
+      //print('new : AniPartIdx[ap.index] ${AniPartIdx[ap.index]} - newIdx:$newIdx');
+
+      //print('old : _partOpacity[ap.index] ${_partOpacity[ap.index]} - _newpartOpacity:$_newpartOpacity');
+      var apiO = _partOpacity[ap.index];
+      _partOpacity[ap.index] = _newpartOpacity;
+      _newpartOpacity = apiO;
+      //print('new : _partOpacity[ap.index] ${_partOpacity[ap.index]} - _newpartOpacity:$_newpartOpacity');
+
+      // Eventuellement, possibilité de programmer un changement de valeur dans le futur.
+      // Future.delayed(Duration(seconds: 1), () {
+      //   _partOpacity[ap.index] = 1;
+      //   _newpartOpacity = 0;
+      //   print(
+      //       'new : ap.index ${ap.index} - AniPartIdx[ap.index]:${AniPartIdx[ap.index]} - ${AnimalPartsFN[ap.index][AniPartIdx[ap.index]]}');
+      //   print("Executed after 2 seconds");
+      //});
+      //(AniPartIdx[ap.index] + swipeDir) % AnimalPartsFN[ap.index].length;
+    } else {
+      //1. Cancel, on revient aux opaxités initiales, avec effet d'animation
+      _partOpacity[ap.index] = 1;
+      _newpartOpacity = 0;
+      _duration = 700;
+      _extraDuration = 500;
+    }
+    swipeDir = 0;
     notifyListeners();
   }
 
@@ -152,16 +155,16 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void changeBodyPart(AniParts ap, int delta) {
-    print('part:$ap ${AniPartIdx[ap.index]}');
-    AniPartIdx[ap.index] += delta;
-    if (AniPartIdx[ap.index] < 0)
-      AniPartIdx[ap.index] = AnimalPartsFN[ap.index].length - 1;
-    if (AniPartIdx[ap.index] >= AnimalPartsFN[ap.index].length)
-      AniPartIdx[ap.index] = 0;
-    print('part:$ap ${AniPartIdx[ap.index]}');
-    notifyListeners();
-  }
+  // void changeBodyPart(AniParts ap, int delta) {
+  //   print('part:$ap ${AniPartIdx[ap.index]}');
+  //   AniPartIdx[ap.index] += delta;
+  //   if (AniPartIdx[ap.index] < 0)
+  //     AniPartIdx[ap.index] = AnimalPartsFN[ap.index].length - 1;
+  //   if (AniPartIdx[ap.index] >= AnimalPartsFN[ap.index].length)
+  //     AniPartIdx[ap.index] = 0;
+  //   print('part:$ap ${AniPartIdx[ap.index]}');
+  //   notifyListeners();
+  // }
 }
 
 class MyHomePage extends StatefulWidget {
@@ -322,10 +325,10 @@ class FavoritesPage extends StatelessWidget {
   }
 }
 
-enum AniParts { head, torso, legs, tail }
+enum AniParts { torso, head, tail, legs }
 
+List<int> AniPartsSwipeZonesIdx = [1, 0, 2, 3];
 List<List<String>> AnimalPartsFN = [
-  ["LION_T1_V", "LION_T2_V", "LION_T3_V"],
   [
     "LION_HOLD_apple",
     "LION_HOLD_cross",
@@ -333,8 +336,9 @@ List<List<String>> AnimalPartsFN = [
     "LION_HOLD_pilgrim",
     "LION_HOLD_sword"
   ],
+  ["LION_T1_V", "LION_T2_V", "LION_T3_V"],
+  ["LION_Qf_V", "LION_Qn_V", "LION_Q-_V", "LION_Qno_V"],
   ["LION_RAMP_legs", "LION_SALI_legs", "LION_SEAA_legs", "LION_DRAG_legs"],
-  ["LION_Qf_V", "LION_Qn_V", "LION_Q-_V", "LION_Qno_V"]
 ];
 List<int> AniPartIdx = [0, 0, 0, 0];
 
@@ -349,7 +353,9 @@ class AnimalCompo extends StatelessWidget {
           for (var ee in AniParts.values)
             ElevatedButton.icon(
               onPressed: () {
-                appState.changeBodyPart(ee, -1);
+                AniPartIdx[ee.index] =
+                    (AniPartIdx[ee.index] - 1) % AnimalPartsFN[ee.index].length;
+                appState.notifyListeners();
               },
               icon: Icon(Icons.arrow_left),
               label: Text(
@@ -380,13 +386,16 @@ class AnimalCompo extends StatelessWidget {
                     flex: 1,
                     child: Listener(
                       onPointerDown: (PointerDownEvent pde) {
-                        appState._touchDown(pde, AniParts.values[i]);
+                        appState._touchDown(
+                            pde, AniParts.values[AniPartsSwipeZonesIdx[i]]);
                       },
                       onPointerUp: (PointerUpEvent pue) {
-                        appState._touchUp(pue, AniParts.values[i]);
+                        appState._touchUp(
+                            pue, AniParts.values[AniPartsSwipeZonesIdx[i]]);
                       },
                       onPointerMove: (PointerMoveEvent pme) {
-                        appState._touchMove(pme, AniParts.values[i]);
+                        appState._touchMove(
+                            pme, AniParts.values[AniPartsSwipeZonesIdx[i]]);
                       },
                       child: Container(
                           height: 50,
@@ -403,7 +412,10 @@ class AnimalCompo extends StatelessWidget {
           for (var ee in AniParts.values)
             ElevatedButton.icon(
               onPressed: () {
-                appState.changeBodyPart(ee, 1);
+                AniPartIdx[ee.index] =
+                    (AniPartIdx[ee.index] + 1) % AnimalPartsFN[ee.index].length;
+                appState.notifyListeners();
+                //appState.changeBodyPart(ee, 1);
               },
               icon: Icon(Icons.arrow_right),
               label: Text(
